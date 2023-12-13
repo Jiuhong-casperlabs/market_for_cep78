@@ -1,0 +1,28 @@
+1, install cep78
+2, mint token // set owner to key of account-hash-xxx
+3, npm run install_market
+
+4, npm run approve // approve market contract hash 
+5, npm run create_listing // create_listing
+6, npm run buy_listing
+
+CEP78
+                {
+                  "key": "hash-87fdeb562b07ccf18e22974edcaf3832e7e6daacd67881406cfc18ccd96eb5f0",
+                  "transform": "WriteContract"
+                },
+                {
+                  "key": "hash-ab47da2b7709b83c9238ef44cd62e138349e9c49ca2dc510f25635bff6fb2c1a",
+                  "transform": "WriteContractPackage"
+                },
+
+   
+market:
+                {
+                  "key": "hash-1eca08d255ee23253f2c2db62293e080f520d671e0247548ca9982ed624a4243",
+                  "transform": "WriteContract"
+                },
+                {
+                  "key": "hash-5561a34171f8d7b671e530e2eecfd7fa4f2d57fc204a773516f31de3585c246b",
+                  "transform": "WriteContractPackage"
+                },
