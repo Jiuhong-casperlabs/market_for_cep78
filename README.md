@@ -25,6 +25,7 @@ make build-contract
 
 ```
 cd js-client
+npm install
 ```
 1, install cep78
 
