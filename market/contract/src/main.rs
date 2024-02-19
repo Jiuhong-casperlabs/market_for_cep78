@@ -34,6 +34,8 @@ const TOKEN_ID_ARG: &str = "token_id";
 const PRICE_ARG: &str = "price";
 const BUYER_PURSE_ARG: &str = "purse";
 const ACCEPTED_OFFER_ARG: &str = "accepted_offer";
+const RECIPIENT_ARG: &str = "recipient";
+const AMOUNT_ARG: &str = "amount";
 
 #[no_mangle]
 pub extern "C" fn create_listing() -> () {
@@ -87,19 +89,23 @@ pub fn buy_listing() -> () {
     let buyer_purse: URef = runtime::get_named_arg(BUYER_PURSE_ARG);
     let purse_balance: U512 = system::get_purse_balance(buyer_purse).unwrap();
 
+    let recipient: Key = runtime::get_named_arg(RECIPIENT_ARG);
+    let amount: U256 = runtime::get_named_arg(AMOUNT_ARG);
+
     if purse_balance < listing.price {
         runtime::revert(Error::BalanceInsufficient);
     }
 
     let seller = get_token_owner(token_contract_hash, &token_id);
 
-    system::transfer_from_purse_to_account(
-        buyer_purse,
-        seller.into_account().unwrap_or_revert(),
-        listing.price,
-        None,
-    )
-    .unwrap_or_revert();
+    runtime::call_contract::<()>(
+        token_contract_hash, // cep18 contract
+        "transfer",
+        runtime_args! {
+            "recipient" => recipient,
+            "amount" => amount
+        },
+    );
 
     runtime::call_contract::<()>(
         token_contract_hash,
