@@ -35,7 +35,7 @@ const PRICE_ARG: &str = "price";
 const BUYER_PURSE_ARG: &str = "purse";
 const ACCEPTED_OFFER_ARG: &str = "accepted_offer";
 const RECIPIENT_ARG: &str = "recipient";
-const AMOUNT_ARG: &str = "amount";
+const OWNER_ARG: &str = "owner";
 const CEP18_CONTRACT_HASH_ARG: &str = "cep18_contract_hash";
 
 #[no_mangle]
@@ -94,7 +94,9 @@ pub fn buy_listing() -> () {
     let cep18_contract_hash: ContractHash =
         ContractHash::from_formatted_str(&cep18_contract_string).unwrap();
     let recipient: Key = runtime::get_named_arg(RECIPIENT_ARG);
-    let amount: U256 = runtime::get_named_arg(AMOUNT_ARG);
+    let owner: Key = runtime::get_named_arg(OWNER_ARG);
+
+    let amount: U256 = U256::from(listing.price.as_u64());
 
     if purse_balance < listing.price {
         runtime::revert(Error::BalanceInsufficient);
@@ -104,9 +106,10 @@ pub fn buy_listing() -> () {
 
     runtime::call_contract::<()>(
         cep18_contract_hash, // cep18 contract
-        "transfer",
+        "transfer_from",
         runtime_args! {
             "recipient" => recipient,
+            "owner" => owner,
             "amount" => amount
         },
     );
