@@ -23,7 +23,7 @@ use event::MarketEvent;
 mod event;
 use data::{
     contract_package_hash, emit, force_cancel_listing, get_id, get_listing, get_listing_dictionary,
-    get_offers, get_purse, get_token_owner, token_id_to_vec, transfer_approved, Error, Listing,
+    get_offers, get_purse, get_token_owner, transfer_approved, Error, Listing,
 };
 mod data;
 
@@ -36,6 +36,7 @@ const BUYER_PURSE_ARG: &str = "purse";
 const ACCEPTED_OFFER_ARG: &str = "accepted_offer";
 const RECIPIENT_ARG: &str = "recipient";
 const AMOUNT_ARG: &str = "amount";
+const CEP18_CONTRACT_HASH_ARG: &str = "cep18_contract_hash";
 
 #[no_mangle]
 pub extern "C" fn create_listing() -> () {
@@ -89,6 +90,9 @@ pub fn buy_listing() -> () {
     let buyer_purse: URef = runtime::get_named_arg(BUYER_PURSE_ARG);
     let purse_balance: U512 = system::get_purse_balance(buyer_purse).unwrap();
 
+    let cep18_contract_string: String = runtime::get_named_arg(CEP18_CONTRACT_HASH_ARG);
+    let cep18_contract_hash: ContractHash =
+        ContractHash::from_formatted_str(&cep18_contract_string).unwrap();
     let recipient: Key = runtime::get_named_arg(RECIPIENT_ARG);
     let amount: U256 = runtime::get_named_arg(AMOUNT_ARG);
 
@@ -99,7 +103,7 @@ pub fn buy_listing() -> () {
     let seller = get_token_owner(token_contract_hash, &token_id);
 
     runtime::call_contract::<()>(
-        token_contract_hash, // cep18 contract
+        cep18_contract_hash, // cep18 contract
         "transfer",
         runtime_args! {
             "recipient" => recipient,
