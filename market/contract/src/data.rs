@@ -45,7 +45,7 @@ pub struct Listing {
     pub seller: Key,
     pub token_contract: ContractHash,
     pub token_id: String,
-    pub price: U512,
+    pub price: U256,
 }
 
 const EVENT_TYPE: &str = "event_type";
@@ -64,7 +64,7 @@ pub fn contract_package_hash() -> ContractHash {
     let last_entry = call_stacks.last().unwrap_or_revert();
     let package_hash: Option<ContractHash> = match last_entry {
         CallStackElement::StoredContract {
-            contract_package_hash,
+            contract_package_hash: _,
             contract_hash,
         } => Some(*contract_hash),
         _ => None,
@@ -146,10 +146,10 @@ pub fn force_cancel_listing(token_contract: &str, token_id: &str) -> () {
     storage::dictionary_put(dictionary_uref, &listing_id, None::<Listing>);
 }
 
-pub fn get_offers(offers_id: &str) -> (BTreeMap<Key, U512>, URef) {
+pub fn get_offers(offers_id: &str) -> (BTreeMap<Key, U256>, URef) {
     let dictionary_uref = get_dictionary_uref(OFFER_DICTIONARY);
 
-    let offers: BTreeMap<Key, U512> = match storage::dictionary_get(dictionary_uref, &offers_id) {
+    let offers: BTreeMap<Key, U256> = match storage::dictionary_get(dictionary_uref, &offers_id) {
         Ok(item) => match item {
             None => BTreeMap::new(),
             Some(offers) => offers,

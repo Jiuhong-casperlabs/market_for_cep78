@@ -46,7 +46,7 @@ pub extern "C" fn create_listing() -> () {
     let token_contract_hash: ContractHash =
         ContractHash::from_formatted_str(&token_contract_string).unwrap();
     let token_id: String = runtime::get_named_arg(TOKEN_ID_ARG);
-    let price: U512 = runtime::get_named_arg(PRICE_ARG);
+    let price: U256 = runtime::get_named_arg(PRICE_ARG);
 
     if token_owner != get_token_owner(token_contract_hash, &token_id) {
         runtime::revert(Error::PermissionDenied);
@@ -93,21 +93,27 @@ pub fn buy_listing() -> () {
 
     let seller = get_token_owner(token_contract_hash, &token_id);
 
+    // system::transfer_from_purse_to_account(
+    //     buyer_purse,
+    //     seller.into_account().unwrap_or_revert(),
+    //     listing.price,
+    //     None,
+    // )
+    // .unwrap_or_revert();
+
     let cep18_contract_string: String = runtime::get_named_arg(CEP18_CONTRACT_HASH_ARG);
     let cep18_contract_hash: ContractHash =
         ContractHash::from_formatted_str(&cep18_contract_string).unwrap();
-    let recipient: Key = runtime::get_named_arg(RECIPIENT_ARG);
     let owner: Key = runtime::get_named_arg(OWNER_ARG);
-    let cep18_amount: U256 = runtime::get_named_arg(AMOUNT_CEP18_ARG);
 
     // cep18 payment
     runtime::call_contract::<()>(
         cep18_contract_hash, // cep18 contract
         "transfer_from",
         runtime_args! {
-            "recipient" => recipient,
+            "recipient" => seller,
             "owner" => owner,
-            "amount" => cep18_amount
+            "amount" => U256::from(listing.price.as_u64())
         },
     );
 
@@ -166,7 +172,7 @@ pub extern "C" fn make_offer() -> () {
     let bidder_purse: URef = runtime::get_named_arg(BUYER_PURSE_ARG);
     let purse_balance: U512 = system::get_purse_balance(bidder_purse).unwrap();
 
-    let (mut offers, dictionary_uref): (BTreeMap<Key, U512>, URef) = get_offers(&offers_id);
+    let (mut offers, dictionary_uref): (BTreeMap<Key, U256>, URef) = get_offers(&offers_id);
 
     let offers_purse = get_purse(OFFERS_PURSE);
 
@@ -176,15 +182,15 @@ pub extern "C" fn make_offer() -> () {
         None => (),
     }
 
-    offers.insert(bidder, purse_balance);
     // system::transfer_from_purse_to_purse(bidder_purse, offers_purse, purse_balance, None)
     //     .unwrap_or_revert();
     let cep18_contract_string: String = runtime::get_named_arg(CEP18_CONTRACT_HASH_ARG);
     let cep18_contract_hash: ContractHash =
         ContractHash::from_formatted_str(&cep18_contract_string).unwrap();
     let recipient: Key = runtime::get_named_arg(RECIPIENT_ARG);
-    let owner: Key = runtime::get_named_arg(OWNER_ARG);
     let cep18_amount: U256 = runtime::get_named_arg(AMOUNT_CEP18_ARG);
+
+    offers.insert(bidder, cep18_amount);
 
     // cep18 payment
     runtime::call_contract::<()>(
@@ -192,7 +198,7 @@ pub extern "C" fn make_offer() -> () {
         "transfer_from",
         runtime_args! {
             "recipient" => recipient,
-            "owner" => owner,
+            "owner" => bidder,
             "amount" => cep18_amount
         },
     );
@@ -204,7 +210,7 @@ pub extern "C" fn make_offer() -> () {
         buyer: bidder,
         token_contract: token_contract_string,
         token_id: token_id,
-        price: purse_balance,
+        price: cep18_amount,
     })
 }
 
@@ -216,14 +222,14 @@ pub extern "C" fn withdraw_offer() -> () {
 
     let offers_id: String = get_id(&token_contract_string, &token_id);
 
-    let (mut offers, dictionary_uref): (BTreeMap<Key, U512>, URef) = get_offers(&offers_id);
+    let (mut offers, dictionary_uref): (BTreeMap<Key, U256>, URef) = get_offers(&offers_id);
 
-    let amount: U512 = offers
+    let amount: U256 = offers
         .get(&bidder)
         .unwrap_or_revert_with(Error::NoMatchingOffer)
         .clone();
 
-    let offers_purse = get_purse(OFFERS_PURSE);
+    // let offers_purse = get_purse(OFFERS_PURSE);
 
     // system::transfer_from_purse_to_account(
     //     offers_purse,
@@ -236,8 +242,6 @@ pub extern "C" fn withdraw_offer() -> () {
     let cep18_contract_hash: ContractHash =
         ContractHash::from_formatted_str(&cep18_contract_string).unwrap();
     let recipient: Key = runtime::get_named_arg(RECIPIENT_ARG);
-    let owner: Key = runtime::get_named_arg(OWNER_ARG);
-    let cep18_amount: U256 = runtime::get_named_arg(AMOUNT_CEP18_ARG);
 
     // cep18 payment
     runtime::call_contract::<()>(
@@ -245,8 +249,8 @@ pub extern "C" fn withdraw_offer() -> () {
         "transfer_from",
         runtime_args! {
             "recipient" => recipient,
-            "owner" => owner,
-            "amount" => cep18_amount
+            "owner" => bidder,
+            "amount" => amount
         },
     );
 
@@ -274,11 +278,11 @@ pub extern "C" fn accept_offer() -> () {
     let offer_account_hash: String = runtime::get_named_arg(ACCEPTED_OFFER_ARG);
     let accepted_bidder_hash: Key = Key::from_formatted_str(&offer_account_hash).unwrap();
     let offers_id: String = get_id(&token_contract_string, &token_id);
-    let offers_purse = get_purse(OFFERS_PURSE);
+    // let offers_purse = get_purse(OFFERS_PURSE);
 
-    let (mut offers, dictionary_uref): (BTreeMap<Key, U512>, URef) = get_offers(&offers_id);
+    let (mut offers, dictionary_uref): (BTreeMap<Key, U256>, URef) = get_offers(&offers_id);
 
-    let amount: U512 = offers
+    let amount: U256 = offers
         .get(&accepted_bidder_hash)
         .unwrap_or_revert_with(Error::NoMatchingOffer)
         .clone();
@@ -293,18 +297,17 @@ pub extern "C" fn accept_offer() -> () {
     let cep18_contract_string: String = runtime::get_named_arg(CEP18_CONTRACT_HASH_ARG);
     let cep18_contract_hash: ContractHash =
         ContractHash::from_formatted_str(&cep18_contract_string).unwrap();
-    let recipient: Key = runtime::get_named_arg(RECIPIENT_ARG);
+    // let recipient: Key = runtime::get_named_arg(RECIPIENT_ARG);
     let owner: Key = runtime::get_named_arg(OWNER_ARG);
-    let cep18_amount: U256 = runtime::get_named_arg(AMOUNT_CEP18_ARG);
 
     // cep18 payment
     runtime::call_contract::<()>(
         cep18_contract_hash, // cep18 contract
         "transfer_from",
         runtime_args! {
-            "recipient" => recipient,
+            "recipient" => seller,
             "owner" => owner,
-            "amount" => cep18_amount
+            "amount" => amount
         },
     );
     offers.remove(&accepted_bidder_hash);
@@ -321,13 +324,23 @@ pub extern "C" fn accept_offer() -> () {
 
     // refund the other offers
     for (account, bid) in &offers {
-        system::transfer_from_purse_to_account(
-            offers_purse,
-            account.into_account().unwrap_or_revert(),
-            bid.clone(),
-            None,
-        )
-        .unwrap_or_revert();
+        // system::transfer_from_purse_to_account(
+        //     offers_purse,
+        //     account.into_account().unwrap_or_revert(),
+        //     bid.clone(),
+        //     None,
+        // )
+        // .unwrap_or_revert();
+        // cep18 payment
+        runtime::call_contract::<()>(
+            cep18_contract_hash, // cep18 contract
+            "transfer_from",
+            runtime_args! {
+                "recipient" => account.clone(),
+                "owner" => owner,
+                "amount" => bid.clone()
+            },
+        );
     }
 
     offers.clear();

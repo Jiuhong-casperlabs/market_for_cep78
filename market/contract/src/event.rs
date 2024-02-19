@@ -1,5 +1,5 @@
 use alloc::string::String;
-use casper_types::{ContractHash, Key, U512};
+use casper_types::{ContractHash, Key, U256};
 
 pub enum MarketEvent {
     ListingCreated {
@@ -7,7 +7,7 @@ pub enum MarketEvent {
         seller: Key, //Key vs AccountHash so we know what we're getting client side
         token_contract: String,
         token_id: String,
-        price: U512,
+        price: U256,
     },
     ListingPurchased {
         package: ContractHash,
@@ -15,7 +15,7 @@ pub enum MarketEvent {
         buyer: Key,
         token_contract: String,
         token_id: String,
-        price: U512,
+        price: U256,
     },
     ListingCanceled {
         package: ContractHash,
@@ -27,7 +27,7 @@ pub enum MarketEvent {
         buyer: Key,
         token_contract: String,
         token_id: String,
-        price: U512,
+        price: U256,
     },
     OfferWithdraw {
         package: ContractHash,
@@ -41,6 +41,6 @@ pub enum MarketEvent {
         buyer: Key,
         token_contract: String,
         token_id: String,
-        price: U512,
+        price: U256,
     },
 }
